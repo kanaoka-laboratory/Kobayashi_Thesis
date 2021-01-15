@@ -1,4 +1,4 @@
-This is e-pTeX, Version 3.14159265-p3.8.3-191112-2.6 (utf8.euc) (TeX Live 2020) (preloaded format=platex 2021.1.9)  9 JAN 2021 14:45
+This is e-pTeX, Version 3.14159265-p3.8.3-191112-2.6 (utf8.euc) (TeX Live 2020) (preloaded format=platex 2021.1.9)  15 JAN 2021 12:46
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -126,10 +126,10 @@ LaTeX Font Info:    Font shape `JY1/mc/bx/n' in size <12> not available
 Here is how much of TeX's memory you used:
  848 strings out of 481140
  12538 string characters out of 5917418
- 257193 words of memory out of 5000000
+ 259193 words of memory out of 5000000
  16943 multiletter control sequences out of 15000+600000
  540520 words of font info for 57 fonts, out of 8000000 for 9000
  929 hyphenation exceptions out of 8191
- 30i,4n,25p,200b,221s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 30i,4n,25p,205b,221s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on thesis_template.dvi (10 pages, 13176 bytes).
+Output written on thesis_template.dvi (10 pages, 14624 bytes).
