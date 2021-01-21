@@ -1,9 +1,27 @@
 \documentclass[a4j]{jarticle}
 \date{}
 \usepackage[dvipdfmx]{graphicx}
+\usepackage{plistings}
 
 \begin{document}
-
+\lstset{
+  basicstyle={\ttfamily},
+  identifierstyle={\small},
+  commentstyle={\smallitshape},
+  keywordstyle={\small\bfseries},
+  ndkeywordstyle={\small},
+  stringstyle={\small\ttfamily},
+  frame={tb},
+  breaklines=true,
+  columns=[l]{fullflexible},
+  numbers=left,
+  xrightmargin=0zw,
+  xleftmargin=3zw,
+  numberstyle={\scriptsize},
+  stepnumber=1,
+  numbersep=1zw,
+  lineskip=-0.5ex
+}
 
 %表題
 \makeatletter %ここから\makeatotherまで触らなくていい
@@ -44,125 +62,341 @@
 
 \newpage
 \section{はじめに} 
+インターネット上に接続された機器同士がデータをやりとりする際、ネットワーク上で通信相手を間違わないよう、それぞれを唯一に特定するために割り当てられいてる識別子Internet Protocol（以後IP）アドレスが存在する。
 
+現在IP Version 4（以後IPv4）が広く利用されているが、インターネットの利用者が増え続けたことによりIPv4アドレスを枯渇していることが問題になっている。
+IPv4アドレスは32ビットのビット長を持ち、約43億個のアドレスを表現することができる。この数はインターネット黎明期の頃は十分な大きさと考えられていたが、インターネットに接続される機器が増え続けたことにより、割り当ての限界を迎えつつある。
+そのためアドレス空間をIPv4から大幅に拡張するなど対策が取られたIP Version6（以後IPv6）の導入がされ、IPv4アドレスからIPv6アドレスへの移行が進んでいくと予想される。しかしながら、IPv4アドレスとIPv6アドレスの間には互換性がなく、相互通信を行うことが出来ないためIPv4アドレスと
+IPv6アドレスの混在環境が続き、いずれ混在する環境からIPv6だけの環境（IPv6 Single Stack環境）へと移行していく。
 
+モバイル環境においては、AppleのiphoneやiPadに提供されるアプリケーション(以後アプリ)ではIPv6に対応することが必須とされている。一方、
+Android OS上ではそういった要件は示されていない。すでにIPv6 Single Stack環境からのアクセスにおいて、正しく動作しないAndroidアプリが複数発見されている。
+
+過去2012年にはIETFにてIPv6 Only Networkについての情報共有がなされ、2018年には北口らによってOS各種のIPv6対応状況調査が行われ、その後、加茂らによってAndroidに焦点を当てv6のみの環境でOSが稼働するか、マーケットが対応しているか、ANdroidアプリが動くかという複数の視点で行われた。
+その結果、古いOSでの未対応状況、マーケットの未対応状況、アプリの大部分が対応していないことが分かったが、Androidアプリの未対応である原因についてまでは書かれていなかった。
+
+IPv4とIPv6の混在環境やIPv6 Single Stack環境で動くようにOSなどは対応されているが、アプリ側で特定のIPバージョンを指定してしまいIPv6 Single Stack環境で動かないケースが考えられる。
+仮に、IPアドレスの指定がされていたら、脆弱性として利用者が攻撃者によってMan in the middle（中間者攻撃）されてしまう問題が考えられる。
+
+そこで本研究では、Androidアプリを対象にアプリ内にIPv4アドレスの指定がされているのか調査と分析を行なっていく
+
+中間発表の段階では、テスト環境として2520個のアプリを対象に、IPv4アドレスの指定が行われいるか調査したところ、2520個中241個のアプリにIPv4アドレスの記載があることが分かった。
+更なる調査として記載があったIPv4アドレスの出現数を数えた結果、一番出現頻度が多かったIPv4アドレスは"127.0.0.1"のループバックアドレスであった。
+
+本論文ではさらなる調査結果を元に、脅威や原因の考察をした。
+
+本論ぶの構成は以下の通りである。第2章で本研究に関する技術についての解説を行い、第3章では関連研究について説明を行う。
+第4章では本研究の調査内容と手法を述べ、第5章で調査結果を述べる。第6章で考察し、最後に第7章で本研究のまとめを述べる。
 
 
 \newpage
 \section{前提知識}
 \subsection{Android}
-
-あああああああああ
-かかかかかかかか
-
-ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ
+AndroidとはGoogle社によって開発された携帯汎用オペレーティングシステムである。スマートフォンやタブレット、時計、テレビなどに搭載されている。
+世界一のシェアを持つも携帯汎用オペレーティングシステムであり、20億人を超える月間アクティブユーザーがいる。
 \subsubsection{アプリケーション配布マーケット}
+GoogleやAppleが提供するモバイルプラットフォームでは、アプリケーション配布のマーケットが提供されている。GoogleではGoogle Playが公式のマーケットであり、
+AppleではApp Storeが公式のマーケットである。Androidアプリにはその他に多くのサードパーティ製マーケットが存在する。
+マーケットからソフトウェアを入手しインストールするために、マーケットへのアクセス専用のアプリケーションが提供されている。Androidでは
+Google Playアプリが提供されており、多くの端末においてあらかじめインストールされている。
 \subsubsection{アプリ開発}
+アプリ開発の際の言語は、Java、Kotlin、C/C++で書くことが可能であるが、基本的にJavaを利用する。開発環境としてはAndroid Studioが公式リリースされている。
 \subsubsection{ライブラリ}
+ライブラリとは、汎用性の高い複数のプログラムを再利用可能な形でひとまとまりにしたものである。また、それ単体ではプログラムとして動作させることはできないもの。
+標準的なライブラリはOSやソフトウェア開発環境の一部として添付されることもある。Android開発においては、Google社から提供されているライブラリやサードパーティライブラリが存在する。
 \subsubsection{APK}
+APKとは、Google社によって開発されたAndroid専用ソフトウェアパッケージのことである。APKの入手方法はAPKストアからダウンロードする方法や、単体で公開されているAPKファイルをダウンロードする方法などが存在する。
+一般にAPKの拡張子は".apk"であり、内部の構造はzipファイルと同様である。
+
+APKファイルに対してzipファイルと同様の解凍処理を行、得られる内部フォルダは以下のような後世になっている。（●はフォルダ、○はファイルを表す。）
+\begin{tabbing}
+ \hspace{8mm} \= \hspace{10mm} \= \hspace{12mm} \= \hspace{15mm} \kill
+\>┏●META-INF
+\\\>┃\>┣〇MANIFEST.MF
+\\\>┃\>┣〇*.SF
+\\\>┃\>┗〇*.RSA or -*.DSA
+\\\>┣●lib
+\\\>┣●res
+\\\>┣●assets
+\\\>┣〇AndroidManifest.xml
+\\\>┣〇classes.dex
+\\\>┗〇resources.arsc
+\end{tabbing}
+
 \subsubsection{APKストア}
+APKストアとは、開発者の作成したAndroidアプリの配信を代行するサービス、及びそれを行っているWebサイトのことである。
+Androidの公式APKストアはGoogle Play１つのみであり、非公式のAPKストアは数多く存在する。
 \subsubsection{Smaliファイル}
+Smaliファイルとは、APKに含まれるソースコードをDalvikバイトコードとして表記したものであり、その情報はclasses.dexに含まれている。
+Dalvikバイトコードとは、Androidにおける中間言語である。Apktool等を用いてAPKより取得できるSmaliファイルは、Dalvikバイトコードで記述されている。
 \subsubsection{APKからSmaliファイルの変換}
-\begin{itemize}
-\item まずは
-\item この章のなかで書くことを
-\item 箇条書きで書き出してみる
-\item ことから始めましょう
-\end{itemize}
+APKからSmaliファイルを展開する方法は、Apktoolを使う方法がある。ApktoolはAPKに含まれる全てのリソース・ソースコード・XMLを展開する。
+importされたパッケージがディレクトリとして存在し、これにより使用ライブラリ
 
 \subsection{IP}
-あああああ
-あああああ
+IPとは、複数の通信ネットワークを相互に接続し、データを中継・伝送して一つの大きなネットワークにすることができる通信規約である。
+また、IPにおいてパケットを送受信する機器を判別するための番号をIPアドレスという。
+
+現在IPはIPv4とIPv6が混在した状態にある。
+
+IPv4アドレスは32ビットで構成される世界で重複のないアドレスで、8ビット毎4つにピリオドで区切った数値列を10進数で表され、
+例えば"192.168.255.255"のように表記されます。
+一方、IPv6アドレスは128ビットを16ビット毎8つにコロンで区切った数値列を16進数で表され、
+例えば"2001:0DB8:0000:0000:0008:0800:200C:417A"のように表記されます。
+IPv6アドレス表記では連続する0は省略可能であるが、各フィールドに少なくとも1つの数値を含ませなければならない。
+また、16ビットの0が複数連続している場合は"::"と何処でも省略することができるが、省略できるのは一カ所のみ。
+例えば"2001:0DB8:0000:0000:0008:0800:200C:417A"というIPv6アドレスは"2001:DB8::8:800:200C:417A"と省略する。
+IPv4アドレスではネットワーク部とホスト部に別れて構成される。
+一方、IPv6アドレスはサブネットプレフィックスとインターフェースIDに別れて構成される。
+IPv6のサブネットプレフィックスは、IPv4のネットワーク部に該当し、IPv6のインターフェースIDは、IPv4のホスト部に該当する。
+サブネットフィックスは64ビットが標準的な値であるため、インターフェースIDも64ビットであることが一般的である。
+IPv4アドレスとIPv6アドレスの大きな違いとしては、アドレスビット長が32ビットから128ビットと大幅に拡張している事が挙げられる。
+その他に、IPv4ではヘッダチェックサムがあるが、TCPやアプリケーション側でエラーチェックを行なっているためIPレベルのエラーチェックは不要だとして、IPv6ではヘッダチェックサムが削除された。
+また、品質制御利用のためのフローラベルが追加されるなどの違いがある。
+IPv4での通信の種類は、ユニキャスト、ブロードキャスト、マルチキャストの3種類でしたが、IPv6ではブロードキャストがマルチキャストへと統合されました。
+IPv4でブロードキャストで行われていたものは、IPv6ではマルチキャストを利用してい行われている。
+一方、IPv6での通信の種類は、ユニキャスト、マルチキャスト、エニーキャストの３種類である。
 \subsubsection{IPv4アドレス枯渇問題}
+現在IPv4が広く利用されているが、インターネットの利用者が増えたことによりIPv4アドレスが枯渇していることが問題になっている。
+IPv4アドレスは32ビットのビット長を持ち、約43億個のアドレスを表現することができる。この数はインターネット黎明期の頃は十分な大きさと考えられていたが、
+インターネットに接続される機器が増え続けたことにより、割り当ての限界を迎えつつある。そのためアドレス空間をIPv4から大幅に拡張するなど対策のとられたIPv6が導入され、
+IPv4からIPv6への移行が進んでいくと予想される。しかしながら、IPv4とIPv6の間には互換性がなく、相互通信を行うことができないため
+IPv4とIPv6の混在環境が続き、いずれ混在する環境からIPv6だけの環境(IPv6 Single Stack)へと移行していく。
 \subsubsection{IPv6 Single Stack}
-\subsubsection{IPv4/IPv6 共存環境}
-\begin{itemize}
-\item まずは
-\item この章のなかで書くことを
-\item 箇条書きで書き出してみる
-\item ことから始めましょう
-\end{itemize}
+IPv6 Single StackとはIPv6のみで動作させる仕組みである。IPv6 Single Stack環境構築にはIPv6 over IPv4トンネリングを利用する。
+IPIPトンネリングとはIPv6パケット全体を一つのデータとして扱い、そのデータの先頭にIPv4ヘッダを付加しカプセル化することでIPv6ネットワークからIPv4ネットワークを
+トンネリングし、IPv6通信を実現させる通信方法である。
+\subsubsection{IPv4/IPv6 共存技術}
+IPv4/IPv6共存環境にはDual Stack環境やNAT64/DNS64が存在する。
+Dual Stackは現在一般的に用いられているIPv4/IPv6共存技術であり、単一の危機においてIPv4とIPv6を同時に動作させる事ができる。
+IPv4対応危機と通信を行う際にはIPv4を使用し、IPv6対応機器と通信を行う際にはIPv6を使用する。一方NAT64/DNS64はIPv6ネットワークからIPv4ネットワーク
+に接続する技術である。Dual StackがIPv4アドレスとIPv6アドレスの両方を必要とsるのに対し、NAT64/DNS64はIPv6アドレスのみを与え利用される技術である。
+IPv4アドレス枯渇問題対策として有効である。
 
-
-
-
-
-
-
+Dual Stack環境は、RAを動作させているルータマシンでDHCPサーバのソフトウェアをインストールし起動させプライベートIPアドレス等必要な設定を行、NATでIPv4ネットwー国
+アクセス
+する。NATとはプライベートIPv4アドレスとグローバルIPv4アドレスの間でアドレス変換をする技術である。
 
 \newpage
 \section{関連研究} %先に書く
 \subsection{北口らによる調査}
+北口らは、IPv6対応状況の研究としてOSの観点から調査を行なった。そこでは各種OSにおけるIPv6実装状況の検証がされ、さらにネットワーク運用管理に与える影響について
+考察を行なっていた。表２は各OSにおけるSLAACで用いるインターフェースIDの生成手法、RAにおけるRDNSSオプションの実装、DHCPv6の実装及びIPv6 Single Stack環境での検証結果を
+示している。ただしMicrosoft社のインターフェースIDの生成方法は確認できていない。
 
+Android OSについては、バージョン4、５、６、７を対処に調査が行われており、全てのバージョンでDHCPv6に未対応であることと、バージョン4ではIPv6 Single Stack環境では動作しないことが示されている。
+また運用管理の課題としては、セキュリティインシデント時のトレーサビリティ困難性が挙げられている。
 \subsection{Durdagiらによる調査}
+DurdagiらはIPv6とIPv4のセキュリティと脅威の比較調査を行なった。しかし、技術使用の視点からの指摘はされているが、運用の視点や混在環境での脅威といった視点では議論は行われいない。
 
 \subsection{Rosilらによる調査}
+RosliらはIPv6環境の脅威に焦点をあて、セキュリティ対策の提案をした。しかし、技術使用の視点からの指摘はされているが、運用の視点や混在環境での脅威といった視点では議論は行われていない。
+
 
 \subsection{加茂らよる調査}
-
+加茂らはAndroidに焦点を当てIPv6 Single Stack環境でOSが稼働するか、マーケットが対応しているか、Androidアプリが動くか複数の視点で行われた。
+しかし、Androidアプリの未対応である原因についてまでは書かれていなかった。
 
 \newpage
 \section{調査及び分析内容・手法}
-\subsection{調査環境のデザイン}
-\subsubsection{APKからSmaliファイルに変換プログラム}
-あああああ
-あああああ
-\begin{itemize}
-\item まずは
-\item この章のなかで書くことを
-\item 箇条書きで書き出してみる
-\item ことから始めましょう
-\end{itemize}
-\subsubsection{Smaliファイル内からIPv4アドレスの探索プログラム}
-\subsubsection{AndroidManifest内からapplicationIdを取得するプログラム}
+\subsection{APKからSmaliファイルの変換プログラム}
+Smaliファイルの取得はapktoolを用いてapkファイルの変換を行う。
+APKからSmaliファイルの変換を行うために以下のコマンドを行う。
+
+\begin{lstlisting}[caption=APKからSmaliファイルの変換のコマンド]
+	apktool d $APK_FILE　-o /ssd1/$name/$OUTPUT_FOLDER
+\end{lstlisting}
+
+今回は、多くのAPKファイルを調査する必要であるため、以上のコマンドを複数回実行する必要がある。
+そのため、以上のコマンドをシェルスクリプトにまとめて実行することを推奨する。
+シェルスクリプトとは、複数のUNIXコマンドを一つのファイルに会場区切りで記述したものである。
+シェルスクリプトを作成し実行を行うと、ファイルに記載されているコマンドが上から順に実行される。
+シェルスクリプトの作成の仕方は様々だが、シェルの一つである「sh」を例に、APKからSmaliファイルの変換を行うためのシェルスクリプトを以下に記載する。
+
+
+\begin{lstlisting}[caption=APKからSmaliファイルの変換を行うシェルスクリプト]
+#!/bin/sh
+name = "フォルダ"
+APK_FILES = $(find /media/$(name)/*.apk)
+for APK_FILE in $APK_FILES
+do
+	echo $APK_FILE
+	OUTPUT_FOLDER=$(basename $(APK_FILE).apk)
+	apktool d $APK_FILE -o /ssd1/$name/$OUTPUT_FOLDER
+done
+\end{lstlisting}
+シェルスクリプトを実行するためには以下のコマンドを実行する。
+\begin{lstlisting}[caption=シェルスクリプトの実行方法]
+bash ./Smali1.sh　
+\end{lstlisting}
+以上でAPKをSmaliファイルに変換を行うことができる。
+
+\subsection{Smaliファイル内からIPv4アドレスの探索プログラム}
+Smaliファイル内からIPv4アドレスの探索を行うためのスクリプトをPythonで作成する。
+\begin{lstlisting}[caption=Smaliファイル内からIPv4アドレスの探索を行うためのPythonスクリプト]
+import glob
+import os
+import pprint #結果を見やすくするためのモジュール
+import sys
+import pathlib
+import re   #正規表現のためのモジュール
+import csv
+import sys,os
+
+def Find_IPv4(apk_file):
+	args = '(([1-9]?[0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([1-9]?[0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])'
+	count =0
+	result_path = "/ssd1/IP_result/IP_File/"+apk_file+".csv"
+	print("通過します")
+	path = "/ssd1/"+apk_file+"/*/smali*/**/*.smali"
+	result = pathlib.Path(result_path)
+	result.touch()
+	smail_files = glob.glob(path,recursive = True)
+	pprint.pprint(args)
+	for file_path in smail_files:
+		with open(file_path,encoding="utf-8_sig") as f:
+			lines = f.readlines()
+			txtcount=0
+			for contents in lines:
+				txtcount +=1
+				match2 = re.search(r'\s'+args+r'\s',contents)
+				match3 = re.search(r'^'+args+r'$',contents)
+				match4 = re.search(r'\"'+args+r'\"',contents)
+				match5 = re.search(r"\s"+args+r"$",contents)
+				match6 = re.search(r"^"+args+r"\s",contents)
+				match7 = re.search(r"'"+args+r"'",contents)
+				contents = f.readline()
+				if match2 or match3 or match4 or match5 or match6 or match7:
+					pprint.pprint(file_path)
+					pan = [file_path,str(txtcount)]
+					count += 1
+					with open(result_path,"a", newline='') as n:
+						writer = csv.writer(n, lineterminator='\n')
+						writer.writerow(pan)
+					n.close
+				else:
+					continue
+		f.close
+	print("Smali内のIPv4探索を終了します")
+	return(result_path)
+		
+\end{lstlisting}
+
+\subsection{AndroidManifest内からapplicationIdを取得するプログラム}
+AndroidManifest内からapplicationIDを取得するPythonスクリプトを作成する。
+\begin{lstlisting}
+import csv
+import re
+from collections import Counter
+import xml.etree.ElementTree as ET
+def AndroidManifest(txt,file):
+	file_name_list=[]
+	Duplicate_File_Count=[]
+	with open(txt,encoding="utf-8") as f:
+		path_list = csv.reader(f)
+		for path in path_list:
+			file_name = path[0].split('/smali')[0]
+			file_name_list.append(file_name)
+		print(file_name_list)
+	f.close 
+	Duplicate = Counter(file_name_list) 
+	for File in Duplicate.most_common():
+		Duplicate_File_Count.append(File)   
+	file_name_list = "/ssd1/IP_result/Edit_Name_File/"+file+".csv"  
+	with open(file_name_list, 'w',newline='') as f:
+		writer = csv.writer(f)
+		writer.writerows(Duplicate_File_Count)  
+	result_path = "/ssd1/csv_result/PackageName/"+file+".csv"
+	list=[]
+	with open(file_name_list,encoding="utf-8") as f:
+		name_list = csv.reader(f)
+		for name in name_list:
+		print(name[0])
+		file_path = name[0]+"/AndroidManifest.xml"
+		tree = ET.parse(file_path)
+		root = tree.getroot()
+		print(root.attrib["package"])
+		list.append([name[0],root.attrib["package"]])
+	with open(result_path,"w",newline="") as f:
+		writer = csv.writer(f)
+		writer.writerows(list)
+	return
+\end{lstlisting}
+\subsection{グローバルIPアドレスとプライベートIPアドレスの割合調査プログラム}
+グローバルIPアドレスとプライベートIPアドレスの割合調査するPythonスクリプトを作成する。
+\begin{lstlisting}
+import csv
+import pprint
+import re
+def Distinction(txt,IP_Adress):
+	ip_list =[]
+	ip_list2= []
+	#プライベートIPアドレス
+	file_list=[]
+	#グローバルIPアドレス
+	file_list2=[]
+	PrivateIPv4 =0
+	GlobalIPv4 = 0
+	args = '(^127\.)|(^169\.254\.)|(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'
+	with open(IP_Adress,encoding="utf-8") as n:
+		ip_adress = csv.reader(n)
+		for ip in ip_adress:
+			ip_list.append([ip[0]])
+	n.close
+	with open(txt, encoding="utf-8") as f:
+		reader = csv.reader(f)
+		for row in reader:
+			file_name = row[0].split('/smali')[0]
+			a =row[2].strip('"')
+			ip_name = a.strip()
+			ip_list2.append([file_name,ip_name])
+	f.close
+	for ip in ip_list:
+		for ans in ip_list2:
+			#同じIp_Adressならば通過できる
+			if ip[0] == ans[1]:
+				#print(file_list)
+				print(ans[0])
+				match = re.search(args,ans[1])
+				if match:
+					if ans[0] not in file_list:
+						print("プライベートIPアドレスあったよ")
+						PrivateIPv4+=1
+						file_list.append(ans[0])
+				else:
+					if ans[0] not in file_list2:
+						print("グローバルIPアドレス")
+						GlobalIPv4+=1
+						file_list2.append(ans[0])
+	return
+	
+\end{lstlisting}
+
+\subsection{Androidアプリ内にIPアドレスのハードコーディングがされているのか調査}
+
+\subsection{グローバルIPアドレスとプライベートIPアドレスの割合調査}
+
+\subsection{Androidアプリの種類調査}
 
 \newpage
-
-\section{調査・結果}
-\subsection{Androidアプリ内にIPアドレスのハードコーディングがされているのか調査}
+\section{結果}
 \subsection{Androidアプリ内にIPアドレスのハードコーディングがされているのか調査結果}
-\subsection{グローバルIPアドレスとプライベートIPアドレスの割合調査}
 \subsection{グローバルIPアドレスとプライベートIPアドレスの割合調査結果}
-\subsection{Androidアプリの種類調査}
 \subsection{Androidアプリの種類結果}
-\begin{itemize}
-\item まずは
-\item この章のなかで書くことを
-\item 箇条書きで書き出してみる
-\item ことから始めましょう
-\end{itemize}
+
 
 \newpage
 \section{考察}
 \subsection{Androidアプリ内にIPアドレスのハードコーディングについて}
 \subsection{IPアドレスのハードコーディングにおける脅威について}
 
-\begin{itemize}
-\item まずは
-\item この章のなかで書くことを
-\item 箇条書きで書き出してみる
-\item ことから始めましょう
-\end{itemize}
-
 \newpage
 \section{まとめ}
-あああああ
-
-あああああ
-
-\begin{itemize}
-\item まずは
-\item この章のなかで書くことを
-\item 箇条書きで書き出してみる
-\item ことから始めましょう
-\end{itemize}	
-
-
 
 \newpage
 \begin{thebibliography}{99}
 \bibitem{bib01}
-だれだれ, "文献1", 年度
+だれだれ, "https://www.nic.ad.jp/ja/newsletter/No32/090.html", 年度
 \bibitem{bib02}
 だれだれ, "文献2", 年度
 \bibitem{bib03}
