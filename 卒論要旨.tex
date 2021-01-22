@@ -1,0 +1,92 @@
+\documentclass[twocolumn, 10pt, a4paper]{jarticle}
+
+%======== レイアウト設定 ======
+% 版面を中央に（上下）
+\topmargin=\paperheight
+\advance\topmargin by -\textheight
+\divide\topmargin by 2
+\advance\topmargin by -1truein
+\advance\topmargin by -\headheight
+\advance\topmargin by -\headsep
+
+% 版面を中央に（左右）
+\oddsidemargin=\paperwidth
+\advance\oddsidemargin by -\textwidth
+\divide\oddsidemargin by 2
+\advance\oddsidemargin by -1truein
+\evensidemargin=\paperwidth
+\advance\evensidemargin by -\textwidth
+\divide\evensidemargin by 2
+\advance\evensidemargin by -1truein
+\usepackage{url}
+%==============
+
+
+
+
+\title{\vspace{-3cm}
+{\large 卒論要旨}\\
+{\bf
+%======== 卒業研究タイトル（ここから） ======
+AndroidアプリケーションにおけるIPv4アドレスの\\ハードコーディングに関する調査と分析
+%======== 卒業研究タイトル（ここまで） ======
+}
+}
+\author{
+5517044 \\		%学籍番号
+小林　裕		%氏名
+}
+\date{}
+
+\begin{document}
+
+
+\maketitle
+\thispagestyle{empty}
+
+%======= ここから本文 ========
+インターネット上に接続された機器同士がデータをやり取りする際、ネットワーク上で通信相手を間違わないよう、それぞれを唯一に特定するために割り当てられている識別子Internet Protocol (以後IP) アドレスが存在する。
+
+現在IP Version 4 (以後IPv4) が広く利用されているが、インターネットの利用者が増え続けたことによりIPv4アドレスが枯渇していることが問題になっている。
+
+IPv4アドレスは32ビットのビット長を持ち、約43億個のアドレスを表現することができる。この数はインターネット黎明期の頃は十分な大きさと考えられていたが、インターネットに接続される機器が増え続けたことにより、割当の限界を迎えつつある。
+そのためアドレス空間をIPv4から大幅に拡張するなど対策が取られたIP Version6 (以後IPv6) の導入がされ、IPv4アドレスからIPv6アドレスへの移行が進んでいくと予想される。しかしながら、IPv4アドレスとIPv6アドレスの間には互換性がなく、相互通信を行うことが出来ないためIPv4アドレスとIPv6アドレスの混在環境が続き、いずれ混在する環境からIPv6だけの環境 (IPv6 Single Stack環境) へと移行していく。
+
+モバイル環境においては、AppleのiphoneやiPadに提供されるアプリケーション (以後アプリ) ではIPv6に対応することが必須とされている[1]。一方、Android OS上ではそういった要件は示されていない。すでにIPv6 Single Stack環境からのアクセスにおいて、正しく動作しないAndroidアプリが複数発見されている。
+
+過去2012年にはIETFにてIPv6 Only Networkについての情報共有がなされ[2]、2018年には北口らによってOS各種のIPv6対応状況調査が行われ[3]、その後、加茂によってAndroidに焦点を当てv6のみの環境でOSが稼働するか、マーケットが対応しているか、Androidアプリが動くかという複数の視点で行われた[4]。
+その結果、古いOSでの未対応状況、マーケットの未対応状況、アプリの大部分が対応していないことが分かったが、Androidアプリの未対応である原因についてまでは書かれていなかった。
+
+IPv4とIPv6の混在環境やIPv6 Single Stack環境で動くようにOSなどは対応されているが、アプリ側で特定のIPバージョンを指定してしまってIPv6 Single Stack環境で動かないケースが考えられる。仮に、IPアドレスの指定がされていたら、脆弱性として利用者が攻撃者によってMan in the middle(中間者攻撃)されてしまう問題が考えられる。
+
+そこで本研究では、Androidアプリを対象にアプリ内にIPv4アドレスの指定がされているのか調査と分析を行っていく。
+
+本研究ではIPアドレスのハードコーディングがあるのか調査、プライベートIPアドレスとグローバルIPアドレスの記載率の調査を行なった。
+
+109251個のアプリケーションを対象にIPアドレスのハードコーディングの調査を行い、
+109251個中45305個のアプリケーションにIPv4アドレスの記載があることが分かった。
+また、109251個のアプリ中プライベートIPアドレスの記載があったアプリ数は32489個で29.7\%、
+グローバルIPアドレスの記載があったアプリ数は29074個の26.6\%であることが分かった。
+そこでさらなる調査として記載があったIPv4アドレスの出現数を数えた結果、
+出現頻度が多かったIPv4アドレスは『10.0.0.172』『127.0.0.1』『10.0.0.200』『0.0.0.0』などであった。
+
+
+
+
+
+%======= ここまで本文 ========
+
+%======= 参考文献 ========
+\begin{thebibliography}{20}
+
+\bibitem{one}Support-Apple Developer, "Supporting Ipv6-only Netwoorks", 2016, \url{https://developer.apple.com/suppor/ipv6}
+
+\bibitem{two}JariArikko, Arikeranen, “Experiences from an IPv6-only Network“, 2012,\url{https://tools.itef.org/html/rfc6586}
+
+\bibitem{three}北口 善明, 近堂 徹, 鈴田 伊知郎, 小林 貴之, 前野 譲二, “クライアント OS の IPv6実装検証から見たネットワーク運用における課題の考察”, デジタルプラクティス, 2018
+
+\bibitem{four}加茂恵梨香 Android環境のIPv6対応の調査と分析
+
+\end{thebibliography}
+
+\end{document}
