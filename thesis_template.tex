@@ -389,14 +389,13 @@ IPアドレスにはグローバルIPアドレスとプライベートIPアド�
 \newpage
 \section{結果}
 \subsection{Androidアプリ内にIPアドレスのハードコーディングがされているのか調査結果}
-
-IPアドレスのハードコーディングに関する調査を行なった。その結果、
-
+調査の結果、調査を行なったアプリ数109251個の中45305個のアプリにIPv4アドレスの記載があることが分かった。
+以下の表に、出現数の多いIPアドレス別の結果をまとめた。
 \begin{table}[htb]
   \begin{center}
-    \caption{最も多いIPアドレスTOP10}
+    \caption{最も多いIPアドレス1〜20}
     \begin{tabular}{|l|c|} \hline
-      IPアドレス & 個数  \\ \hline \hline
+      IPアドレス & アプリ数 \\ \hline \hline
 10.0.0.172 & 35151 \\ \hline
 127.0.0.1 & 29165 \\ \hline
 10.0.0.200 & 20794 \\ \hline
@@ -407,19 +406,59 @@ IPアドレスのハードコーディングに関する調査を行なった。
 2.5.4.3 & 3197 \\ \hline
 2.5.4.11 & 3190 \\ \hline
 2.5.4.6 & 3188 \\ \hline
+2.5.4.10 & 3187 \\ \hline
+2.5.4.8 & 3186 \\ \hline
+2.5.4.7 & 3183 \\ \hline
+2.5.29.37 & 3065 \\ \hline
+10.0.2.2 & 2878 \\ \hline
+2.5.29.19 & 2876 \\ \hline
+1.4.1.19 & 2762 \\ \hline
+2.0.61.0 & 2758 \\ \hline
+2.5.4.4 & 2360 \\ \hline
+2.5.4.42 & 2354 \\ \hline
+
     \end{tabular}
     \label{tab:price}
   \end{center}
 \end{table}
 
-\subsection{グローバルIPアドレスとプライベートIPアドレスの割合調査結果}
-\subsection{Androidアプリの種類結果}
+\newpage
 
+\subsection{グローバルIPアドレスとプライベートIPアドレスの記載割合調査結果}
+
+調査したアプリ数とグローバルIPアドレスの記載があるアプリ数、プライベートIPアドレスの記載があるアプリ数との記載割合とIPアドレスの記載があるアプリとグローバルIPアドレスがあるアプリ数、
+プライベートIPアドレスの記載があるアプリ数との記載割合を次のような表２〜3でまとめた。
+\begin{table}[htb]
+  \begin{center}
+    \caption{IPアドレスの記載率}
+    \begin{tabular}{|l|c|c|} \hline
+      調査したアプリ数 & グローバルIPアドレス記載があるアプリ数 &　記載率　\\ \hline 
+109251 & 29074&  26.6\%\\ \hline
+調査したアプリ数 & プライベートIPアドレス記載があるアプリ数 &　記載率　\\ \hline 
+109251 & 35151 &  29.7\%\\ \hline
+    \end{tabular}
+    \label{tab:price}
+  \end{center}
+\end{table}
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{IPアドレスの記載率}
+    \begin{tabular}{|l|c|c|} \hline
+IPアドレスの記載のあるアプリ数 & グローバルIPアドレス記載があるアプリ数 &　割合率　\\ \hline 
+10.0.0.172 & 29074 &  26.6\%\\ \hline
+IPアドレスの記載のあるアプリ数 & プライベートIPアドレス記載があるアプリ数 &　割合率　\\ \hline 
+10.0.0.172 & 35151 &  26.6\%\\ \hline
+    \end{tabular}
+    \label{tab:price}
+  \end{center}
+\end{table}
 
 \newpage
 \section{考察}
-\subsection{Androidアプリ内にIPアドレスのハードコーディングについて}
-\subsection{IPアドレスのハードコーディングにおける脅威について}
+\subsection{Androidアプリ内にIPアドレスのハードコーディング調査の分析}
+
+\subsection{IPアドレスのハードコーディングにおける脅威}
 
 \newpage
 \section{まとめ}
